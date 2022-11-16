@@ -51,6 +51,9 @@ float normMult = 6;
 int maxFlySpeedL = 510;
 int maxFlySpeedR = 500;
 
+int lowFlySpeedL = 470;
+int lowFlySpeedR = 450;
+
 float minRotSpeed = 5;
 float rotAutoPow = 1;
 int minDistPix = 3;
@@ -83,6 +86,11 @@ float speedR = 0;
 
 bool accellingL = true;
 bool accellingR = true;
+
+int goalSpeedL = lowFlySpeedL;
+int goalSpeedR = lowFlySpeedR;
+bool highSpeed = false;
+bool speedTogHold = false;
 
 int amFound = 0;
 float lastOrixX = -1;
@@ -782,17 +790,57 @@ void driveLoop () {
     indexer.set(false);
   }
 
-  if (accellingL){
-    speedL += 10;
-    if (speedL >= maxFlySpeedL){
-      accellingL = false;
-    }
+  if(controlButton('r', false)){
+    indexer.set(true);
+  }else {
+    indexer.set(false);
   }
 
+  if(controlButton('L', true) && !speedTogHold){
+    if(highSpeed){
+      goalSpeedL = lowFlySpeedL;
+      goalSpeedR = lowFlySpeedR;
+      accellingL = true;
+      accellingR = true;
+      highSpeed = false;
+      Controller1.rumble(".");
+    }else {
+      goalSpeedL = maxFlySpeedL;
+      goalSpeedR = maxFlySpeedR;
+      accellingL = true;
+      accellingR = true;
+      highSpeed = true;
+      Controller1.rumble("-");
+    }
+    speedTogHold = true;
+  }else if (!controlButton('L', true)){
+    speedTogHold = false;
+  }
+
+  if (accellingL){
+    if (speedL < goalSpeedL){
+      speedL += 10;
+      if (speedL >= goalSpeedL){
+        accellingL = false;
+      }
+    }else {
+      speedL -= 10;
+      if (speedL <= goalSpeedL){
+        accellingL = false;
+      }
+    }
+  }
   if (accellingR){
-    speedR += 10;
-    if (speedR >= maxFlySpeedR){
-      accellingR = false;
+    if (speedR < goalSpeedR){
+      speedR += 10;
+      if (speedR >= goalSpeedR){
+        accellingR = false;
+      }
+    }else {
+      speedR -= 10;
+      if (speedR <= goalSpeedR){
+        accellingR = false;
+      }
     }
   }
 
