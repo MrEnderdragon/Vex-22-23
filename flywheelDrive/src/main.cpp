@@ -59,14 +59,14 @@ float rotAutoPow = 1;
 int minDistPix = 3;
 int minDegReset = 1;
 
-int minRotDeg = -45;
-int maxRotDeg = 45;
+int minRotDeg = -20;
+int maxRotDeg = 20;
 
 float pastOrigBuffer[10]; //length is buffer size
 int bufferSize = sizeof(pastOrigBuffer) / sizeof(float);
 
-// double wheelDiam = 2.5; //inches
-// double chassisWidth = 18.5; //inches
+double wheelDiam = 2.5; //inches
+double chassisWidth = 20.5; //inches
 
 // double trackDiam = 3.26; //inches
 // double trackWidth = 14.5; //inches
@@ -101,17 +101,17 @@ float lastOrixX = -1;
 
 // ---- FORWARD DRIVE MATH ----
 
-// double wheelCirc = wheelDiam * mPi;
-// double distPerWheelDeg =  wheelCirc / 360;
+double wheelCirc = wheelDiam * mPi;
+double distPerWheelDeg =  wheelCirc / 360;
 
 // double trackCirc = trackDiam * mPi;
 // double distPerTrackDeg =  trackCirc / 360;
 
 // ---- TURN DRIVE MATH ----
 
-// double turnCirc = chassisWidth * mPi;
-// double distPerTurnDeg = turnCirc / 360;
-// double wheelDegPerTurnDeg = distPerTurnDeg/distPerWheelDeg;
+double turnCirc = chassisWidth * mPi;
+double distPerTurnDeg = turnCirc / 360;
+double wheelDegPerTurnDeg = distPerTurnDeg/distPerWheelDeg;
 
 // double trackTurnCirc = trackWidth * mPi;
 // double distPerTrackTurnDeg = trackTurnCirc / 360;
@@ -123,395 +123,12 @@ double scale (double inSt, double inEn, double outSt, double outEn, double val){
   return (val-inSt)/(inEn-inSt) * (outEn-outSt) + outSt;
 }
 
-// void driveDist(int speed, int dist){
-//   DriveFL.spinFor(dist/distPerWheelDeg, deg,speed, rpm, false);
-//   DriveBL.spinFor(dist/distPerWheelDeg, deg,speed, rpm, false);
-//   DriveFR.spinFor(dist/distPerWheelDeg, deg,speed, rpm, false);
-//   DriveBR.spinFor(dist/distPerWheelDeg, deg,speed, rpm);
-// }
-
-// double fabs(double inn){
-//   if(inn < 0) {
-//     return -inn;
-//   }
-//   return inn;
-// }
-
-// void distTrack (double dist, int speed, double accellPerc = 10, double decellPerc=80){
-//   leftEnc.resetRotation();
-//   rightEnc.resetRotation();
-
-//   double prevL = 0;
-//   double prevR = 0;
-//   int moveStuck = 0;
-
-//   double distDegs = dist/distPerTrackDeg;
-//   decellPerc /= 100;
-//   accellPerc /= 100;
-
-//   while(true){
-//     double posL = leftEnc.position(deg);
-//     double posR = rightEnc.position(deg);
-
-//     if(fabs(posL-prevL) < moveStuckThresh && fabs(posR-prevR) < moveStuckThresh){
-//       moveStuck++;
-//     }else {
-//       moveStuck = 0;
-//     }
-
-//     prevL = posL;
-//     prevR = posR;
-
-//     if(moveStuck > moveStuckReps) break;
-
-//     // Brain.Screen.print("%f", posR);
-
-//     double speed1 = speed * (distDegs>0?1:-1);
-//     double speed2 = speed * (distDegs>0?1:-1);
-
-//     double percentL = fabs(posL / distDegs);
-//     double percentR = fabs(posR / distDegs);
-
-//     double speedAcc = speed1;
-
-//     if(percentL > decellPerc){
-//       speedAcc = fabs(speed1 * scale(decellPerc, 1, 1, 0, percentL)) * (distDegs>0?1:-1);
-//     }else if (percentL < accellPerc){
-//       speedAcc = fabs(speed1 * scale(0, accellPerc, 0, 1, percentL)) * (distDegs>0?1:-1);
-//     }
-
-//     double comp = minSpeed * ((posL < distDegs)?1:-1);
-//     speed1 = (fabs(comp) > fabs(speedAcc))?comp:speedAcc;
-    
-//     speedAcc = speed2;
-
-//     if(percentR > decellPerc){
-//       speedAcc = fabs(speed2 * scale(decellPerc, 1, 1, 0, percentR)) * (distDegs>0?1:-1);
-//     }else if (percentR < accellPerc){
-//       speedAcc = fabs(speed2 * scale(0, accellPerc, 0, 1, percentR)) * (distDegs>0?1:-1);
-//     }
-
-//     comp = minSpeed * ((posR < distDegs)?1:-1);
-//     speed2 = (fabs(comp) > fabs(speedAcc))?comp:speedAcc;
-
-//     DriveFL.spin(forward, speed1, rpm);
-//     DriveBL.spin(forward, speed1, rpm);
-
-//     DriveFR.spin(forward, speed2, rpm);
-//     DriveBR.spin(forward, speed2, rpm);
-
-//     if(fabs(distDegs-posL) < 50 && fabs(distDegs-posR) < 50) break;
-
-//     vex::task::sleep(moveAcc);
-//   }
-  
-//   DriveFL.stop();
-//   DriveBL.stop();
-//   DriveFR.stop();
-//   DriveBR.stop();
-// }
-
-// void distTrackSimp (double dist, int speed, double accellPerc = 10, double decellPerc=80){
-//   leftEnc.resetRotation();
-//   rightEnc.resetRotation();
-
-//   double prevL = 0;
-//   double prevR = 0;
-//   int moveStuck = 0;
-
-//   double distDegs = dist/distPerTrackDeg;
-//   decellPerc /= 100;
-//   accellPerc /= 100;
-
-//   while(true){
-//     double posL = fabs(leftEnc.position(deg));
-//     double posR = fabs(rightEnc.position(deg));
-
-//     if(fabs(posL-prevL) < moveStuckThresh && fabs(posR-prevR) < moveStuckThresh){
-//       moveStuck++;
-//     }else {
-//       moveStuck = 0;
-//     }
-
-//     double percentL = fabs(posL / distDegs);
-//     double percentR = fabs(posR / distDegs);
-
-//     double speed1 = speed;
-
-//     if(percentL < accellPerc){
-//       speed1 = scale(0, accellPerc, minSpeed, speed, percentL);
-//     }else if (percentL > decellPerc){
-//       speed1 = scale(decellPerc, 1, speed, minSpeed, percentL);
-//     }
-
-//     double speed2 = speed;
-
-//     if(percentR < accellPerc){
-//       speed2 = scale(0, accellPerc, minSpeed, speed, percentR);
-//     }else if (percentR > decellPerc){
-//       speed2 = scale(decellPerc, 1, speed, minSpeed, percentR);
-//     }
-
-//     speed1 = fabs(speed1);
-//     speed2 = fabs(speed2);
-
-//     if (percentL > 1) speed1 = 0;
-//     if (percentR > 1) speed2 = 0;
-
-//     prevL = posL;
-//     prevR = posR;
-
-//     if(moveStuck > moveStuckReps) break;
-      
-//     if (dist >= 0){
-//       DriveFL.spin(forward, speed1, rpm);
-//       DriveBL.spin(forward, speed1, rpm);
-
-//       DriveFR.spin(forward, speed2, rpm);
-//       DriveBR.spin(forward, speed2, rpm);
-//     }else {
-//       DriveFL.spin(reverse, speed1, rpm);
-//       DriveBL.spin(reverse, speed1, rpm);
-
-//       DriveFR.spin(reverse, speed2, rpm);
-//       DriveBR.spin(reverse, speed2, rpm);
-//     }
-
-//     if(percentL >= 1 && percentR >= 1) break;
-
-//     vex::task::sleep(moveAcc);
-//   }
-  
-//   DriveFL.stop();
-//   DriveBL.stop();
-//   DriveFR.stop();
-//   DriveBR.stop();
-// }
-
-// void turnDegsCW(int speed, int degs){
-//   DriveFL.spinFor(degs*wheelDegPerTurnDeg, deg, speed, rpm, false);
-//   DriveBL.spinFor(degs*wheelDegPerTurnDeg, deg, speed, rpm, false);
-//   DriveFR.spinFor(-degs*wheelDegPerTurnDeg, deg, speed, rpm, false);
-//   DriveBR.spinFor(-degs*wheelDegPerTurnDeg, deg, speed, rpm);
-// }
-
-// void turnTrackCW (double degs, int speed, double accellPerc = 10, double decellPerc=80){
-//   leftEnc.resetRotation();
-//   rightEnc.resetRotation();
-
-//   double distDegsL = degs*trackDegPerTurnDeg;
-//   double distDegsR = -degs*trackDegPerTurnDeg;
-//   decellPerc /= 100;
-//   accellPerc /= 100;
-
-//   while(true){
-//     double speed1 = speed * (degs<0?-1:1);
-//     double speed2 = -speed * (degs<0?-1:1);
-
-//     double posL = leftEnc.position(deg);
-//     double posR = rightEnc.position(deg);
-
-//     double percentL = posL / distDegsL;
-//     double percentR = posR / distDegsR;
-
-//     double speedAcc = speed1;
-
-//     if(percentL > decellPerc){
-//       speedAcc = fabs(speed1 * scale(decellPerc, 1, 1, 0, percentL)) * (distDegsL>0?1:-1);;
-//     }else if (percentL < accellPerc){
-//       speedAcc = fabs(speed1 * scale(0, accellPerc, 0, 1, percentL)) * (distDegsL>0?1:-1);;
-//     }
-//     double comp = minSpeed * (posL < distDegsL?1:-1);
-//     speed1 = fabs(comp) > fabs(speedAcc)?comp:speedAcc;
-
-//     speedAcc = speed2;
-
-//     if(percentR > decellPerc){
-//       speedAcc = fabs(speed2 * scale(decellPerc, 1, 1, 0, percentR)) * (distDegsR>0?1:-1);;
-//     }else if (percentR < accellPerc){
-//       speedAcc = fabs(speed2 * scale(0, accellPerc, 0, 1, percentR)) * (distDegsR>0?1:-1);;
-//     }
-
-//     comp = minSpeed * (posR < distDegsR?1:-1);
-//     speed2 = fabs(comp) > fabs(speedAcc)?comp:speedAcc;
-
-//     DriveFL.spin(forward, speed1, rpm);
-//     DriveBL.spin(forward, speed1, rpm);
-
-//     DriveFR.spin(forward, speed2, rpm);
-//     DriveBR.spin(forward, speed2, rpm);
-
-//     if(fabs(distDegsL-posL) < 50 && fabs(distDegsR-posR) < 50) break;
-
-//     vex::task::sleep(moveAcc);
-//   }
-
-//   DriveFL.stop();
-//   DriveBL.stop();
-//   DriveFR.stop();
-//   DriveBR.stop();
-// }
-
-// void turnTrackCWSimp (double degs, int speed, double accellPerc = 10, double decellPerc=80){
-//   leftEnc.resetRotation();
-//   rightEnc.resetRotation();
-
-//   double prevL = 0;
-//   double prevR = 0;
-//   int moveStuck = 0;
-
-//   double distDegs = degs*trackDegPerTurnDeg;
-//   decellPerc /= 100;
-//   accellPerc /= 100;
-
-//   while(true){
-//     double posL = fabs(leftEnc.position(deg));
-//     double posR = fabs(rightEnc.position(deg));
-
-//     if(fabs(posL-prevL) < moveStuckThresh && fabs(posR-prevR) < moveStuckThresh){
-//       moveStuck++;
-//     }else {
-//       moveStuck = 0;
-//     }
-
-//     double percentL = fabs(posL / distDegs);
-//     double percentR = fabs(posR / distDegs);
-
-//     double speed1 = speed;
-
-//     if(percentL < accellPerc){
-//       speed1 = scale(0, accellPerc, minSpeed, speed, percentL);
-//     }else if (percentL > decellPerc){
-//       speed1 = scale(decellPerc, 1, speed, minSpeed, percentL);
-//     }
-
-//     double speed2 = speed;
-
-//     if(percentR < accellPerc){
-//       speed2 = scale(0, accellPerc, minSpeed, speed, percentR);
-//     }else if (percentR > decellPerc){
-//       speed2 = scale(decellPerc, 1, speed, minSpeed, percentR);
-//     }
-
-//     speed1 = fabs(speed1);
-//     speed2 = fabs(speed2);
-
-//     if (percentL > 1) speed1 = 0;
-//     if (percentR > 1) speed2 = 0;
-
-//     prevL = posL;
-//     prevR = posR;
-
-//     if(moveStuck > moveStuckReps) break;
-      
-//     if (degs >= 0){
-//       DriveFL.spin(forward, speed1, rpm);
-//       DriveBL.spin(forward, speed1, rpm);
-
-//       DriveFR.spin(reverse, speed2, rpm);
-//       DriveBR.spin(reverse, speed2, rpm);
-//     }else {
-//       DriveFL.spin(reverse, speed1, rpm);
-//       DriveBL.spin(reverse, speed1, rpm);
-
-//       DriveFR.spin(forward, speed2, rpm);
-//       DriveBR.spin(forward, speed2, rpm);
-//     }
-
-//     if(percentL >= 1 && percentR >= 1) break;
-
-//     vex::task::sleep(moveAcc);
-//   }
-  
-//   DriveFL.stop();
-//   DriveBL.stop();
-//   DriveFR.stop();
-//   DriveBR.stop();
-// }
-
-// void driveTime (int speed, double amTime){
-
-//   amTime *= 1000;
-
-//   int start = vex::timer::system();
-
-//   DriveBL.spin(forward, speed, rpm);
-//   DriveBR.spin(forward, speed, rpm);
-//   DriveFL.spin(forward, speed, rpm);
-//   DriveFR.spin(forward, speed, rpm);
-
-//   while(vex::timer::system() - start <= amTime){
-//     vex::task::sleep(moveAcc);
-//   }
-
-//   DriveFL.stop();
-//   DriveFR.stop();
-//   DriveBL.stop();
-//   DriveBR.stop();
-// }
-
-// void driveTime2 (int speedL, int speedR, double amTime){
-
-//   amTime *= 1000;
-
-//   int start = vex::timer::system();
-
-//   DriveBL.spin(forward, speedL, rpm);
-//   DriveBR.spin(forward, speedR, rpm);
-//   DriveFL.spin(forward, speedL, rpm);
-//   DriveFR.spin(forward, speedR, rpm);
-
-//   while(vex::timer::system() - start <= amTime){
-//     vex::task::sleep(moveAcc);
-//   }
-
-//   DriveFL.stop();
-//   DriveFR.stop();
-//   DriveBL.stop();
-//   DriveBR.stop();
-// }
-
-// void driveTime3 (int speed1, int speed2, int speed3, int speed4, double amTime){
-
-//   amTime *= 1000;
-
-//   int start = vex::timer::system();
-
-//   DriveBL.spin(forward, speed1, rpm);
-//   DriveBR.spin(forward, speed2, rpm);
-//   DriveFL.spin(forward, speed3, rpm);
-//   DriveFR.spin(forward, speed4, rpm);
-
-//   while(vex::timer::system() - start <= amTime){
-//     vex::task::sleep(moveAcc);
-//   }
-
-//   DriveFL.stop();
-//   DriveFR.stop();
-//   DriveBL.stop();
-//   DriveBR.stop();
-// }
-
-// void turnTime (int speed, double amTime){
-
-//   amTime *= 1000;
-
-//   int start = vex::timer::system();
-
-//   DriveBL.spin(forward, speed, rpm);
-//   DriveBR.spin(forward, -speed, rpm);
-//   DriveFL.spin(forward, speed, rpm);
-//   DriveFR.spin(forward, -speed, rpm);
-
-//   while(vex::timer::system() - start <= amTime){
-//     vex::task::sleep(moveAcc);
-//   }
-
-//   DriveFL.stop();
-//   DriveFR.stop();
-//   DriveBL.stop();
-//   DriveBR.stop();
-// }
+void turnDegsCW(int speed, int degs){
+  DriveFL.spinFor(degs*wheelDegPerTurnDeg*2, deg, speed, rpm, false);
+  DriveBL.spinFor(degs*wheelDegPerTurnDeg*2, deg, speed, rpm, false);
+  DriveFR.spinFor(-degs*wheelDegPerTurnDeg*2, deg, speed, rpm, false);
+  DriveBR.spinFor(-degs*wheelDegPerTurnDeg*2, deg, speed, rpm);
+}
 
 int controlAxis (int axis){
   switch(axis){
@@ -884,12 +501,12 @@ void driveLoop () {
   if(aimVision.largestObject.exists && aimVision.largestObject.width > 4) {
     origX = aimVision.largestObject.originX;
   }else {
-    // aimVision.takeSnapshot(aimVision__RED_GOAL);
-    // if(aimVision.largestObject.exists) {
-    //   origX = aimVision.largestObject.originX;
-    // }else {
+    aimVision.takeSnapshot(aimVision__RED_GOAL);
+    if(aimVision.largestObject.exists) {
+      origX = aimVision.largestObject.originX;
+    }else {
       found = false;
-    // }
+    }
   }
 
   for (int i = 0; i < bufferSize-1; i++){
@@ -975,8 +592,120 @@ void driveLoop () {
   driveLoop();
 }
 
-void expand () {
+void expand (int speedLin, int speedRin) {
+  accellingL = true;
+  accellingR = true;
+  
+  goalSpeedL = speedLin;
+  goalSpeedR = speedRin;
 
+  while(accellingL || accellingR){
+    if (accellingL){
+      if (speedL < goalSpeedL){
+        speedL += 10;
+        if (speedL >= goalSpeedL){
+          accellingL = false;
+        }
+      }else {
+        speedL -= 10;
+        if (speedL <= goalSpeedL){
+          accellingL = false;
+        }
+      }
+    }
+    if (accellingR){
+      if (speedR < goalSpeedR){
+        speedR += 10;
+        if (speedR >= goalSpeedR){
+          accellingR = false;
+        }
+      }else {
+        speedR -= 10;
+        if (speedR <= goalSpeedR){
+          accellingR = false;
+        }
+      }
+    }
+    flyL.spin(forward, speedL, rpm);
+    flyR.spin(forward, speedR, rpm);
+
+    Controller1.Screen.clearScreen();
+    Controller1.Screen.setCursor(0, 1);
+    Controller1.Screen.print(speedL);
+    Controller1.Screen.setCursor(0, 20);
+    Controller1.Screen.print(speedR);
+  }
+}
+
+void doubleDropAuto (){
+  expand(lowFlySpeedL, lowFlySpeedR);
+
+  indexer.set(true);
+
+  vex::task::sleep(1000);
+
+  indexer.set(false);
+
+  intake.spin(forward, 200, rpm);
+
+  vex::task::sleep(5000);
+
+  indexer.set(true);
+
+  vex::task::sleep(1000);
+
+  indexer.set(false);
+}
+
+void hailMaryAuto (){
+  expand(300, 280);
+
+  int start = vex::timer::system();
+
+  int amTime = 500;
+
+  while (vex::timer::system() - start <= amTime) {
+    bool found = true;
+    float origX = 315/2;
+
+    aimVision.takeSnapshot(aimVision__BLUE_GOAL);
+    if(aimVision.largestObject.exists && aimVision.largestObject.width > 4) {
+      origX = aimVision.largestObject.originX;
+    }else {
+      aimVision.takeSnapshot(aimVision__RED_GOAL);
+      if(aimVision.largestObject.exists) {
+        origX = aimVision.largestObject.originX;
+      }else {
+        found = false;
+      }
+    }
+    vex::task::sleep(10);
+  }
+
+  indexer.set(true);
+
+  vex::task::sleep(1000);
+
+  indexer.set(false);
+
+  intake.spin(forward, 200, rpm);
+
+  turnDegsCW(100, 150);
+
+  vex::task::sleep(1000);
+
+  expand(lowFlySpeedL, lowFlySpeedR);
+
+  indexer.set(true);
+
+  vex::task::sleep(1000);
+
+  indexer.set(false);
+
+  accellingL = true;
+  accellingR = true;
+  goalSpeedL = lowFlySpeedL;
+  goalSpeedR = lowFlySpeedR;
 }
 
 int main() {
@@ -985,8 +714,8 @@ int main() {
   vexcodeInit();
 
   // Set up callbacks for autonomous and driver control periods.
-  // Competition.autonomous(trackAutoLSkills);
-
+  Competition.autonomous(doubleDropAuto);
+  // Competition.autonomous(hailMaryAuto);
   Competition.drivercontrol(driveLoop);
 
   // Run the pre-autonomous function.
