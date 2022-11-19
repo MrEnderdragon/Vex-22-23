@@ -48,18 +48,22 @@ int turnThreshold = 10;
 float slowMult = 2.4;
 float normMult = 6;
 
-int maxFlySpeedL = 510;
-int maxFlySpeedR = 500;
+int maxFlySpeedL = 240;
+int maxFlySpeedR = 220;
 
-int lowFlySpeedL = 470;
-int lowFlySpeedR = 450;
+int lowFlySpeedL = 180;
+int lowFlySpeedR = 160;
 
 float minRotSpeed = 5;
 float rotAutoPow = 1;
 int minDistPix = 3;
+int minDegReset = 1;
 
-int minRotDeg = -20;
-int maxRotDeg = 20;
+int minRotDeg = -45;
+int maxRotDeg = 45;
+
+float pastOrigBuffer[10]; //length is buffer size
+int bufferSize = sizeof(pastOrigBuffer) / sizeof(float);
 
 // double wheelDiam = 2.5; //inches
 // double chassisWidth = 18.5; //inches
@@ -717,6 +721,10 @@ int asyncStop (void* args) {
 }
 
 void initialize () {
+  for (int i = 0; i < bufferSize; i++){
+    pastOrigBuffer[i] = -1;
+  }
+
   DriveFL.setBrake(brake);
   DriveFR.setBrake(brake);
   DriveBL.setBrake(brake);
@@ -752,6 +760,7 @@ void initialize () {
 void driveLoop () {
 
   int driveAms[] = {0,0,0,0};
+  float speedRot = 0;
 
   // ---- DRIVING ----
 
@@ -774,11 +783,15 @@ void driveLoop () {
     driveAms[1] -= controlAxis(1);
     driveAms[2] += controlAxis(1);
     driveAms[3] -= controlAxis(1);
+
+    if (controlButton('l', false)){
+      speedRot -= controlAxis(1)*multiplier/4;
+    }
   }
 
   drive(driveAms[0],driveAms[1],driveAms[2],driveAms[3]);
 
-  if(controlButton('l', false)){
+  if(controlButton('l', true)){
     intake.stop();
   }else {
     intake.spin(forward, 200, rpm);
@@ -790,10 +803,21 @@ void driveLoop () {
     indexer.set(false);
   }
 
-  if(controlButton('r', false)){
-    indexer.set(true);
+  if(controlButton('r', true)){
+    intake.spin(reverse, 200, rpm);
+  }
+
+  if(controlButton('D', false)){
+    goalSpeedL = 0;
+    goalSpeedR = 0;
   }else {
-    indexer.set(false);
+    if (highSpeed){
+      goalSpeedL = maxFlySpeedL;
+      goalSpeedR = maxFlySpeedR;
+    }else {
+      goalSpeedL = lowFlySpeedL;
+      goalSpeedR = lowFlySpeedR;
+    }
   }
 
   if(controlButton('L', true) && !speedTogHold){
@@ -804,7 +828,7 @@ void driveLoop () {
       accellingR = true;
       highSpeed = false;
       Controller1.rumble(".");
-    }else {
+    } else{
       goalSpeedL = maxFlySpeedL;
       goalSpeedR = maxFlySpeedR;
       accellingL = true;
@@ -847,11 +871,17 @@ void driveLoop () {
   flyL.spin(forward, speedL, rpm);
   flyR.spin(forward, speedR, rpm);
 
+  Controller1.Screen.clearScreen();
+  Controller1.Screen.setCursor(0, 1);
+  Controller1.Screen.print(speedL);
+  Controller1.Screen.setCursor(0, 20);
+  Controller1.Screen.print(speedR);
+
   bool found = true;
   float origX = 315/2;
 
   aimVision.takeSnapshot(aimVision__BLUE_GOAL);
-  if(aimVision.largestObject.exists) {
+  if(aimVision.largestObject.exists && aimVision.largestObject.width > 4) {
     origX = aimVision.largestObject.originX;
   }else {
     // aimVision.takeSnapshot(aimVision__RED_GOAL);
@@ -862,35 +892,65 @@ void driveLoop () {
     // }
   }
 
-  float dOrigX = origX;
-  if (lastOrixX != -1){
-    dOrigX += lastOrixX;
-    dOrigX /= 2;
+  for (int i = 0; i < bufferSize-1; i++){
+    pastOrigBuffer[i] = pastOrigBuffer[i+1];
   }
 
-  if (found) {
-    amFound = 10;
-    if(rotate.position(deg) < maxRotDeg*5 && rotate.position(deg) > minRotDeg*5) {
+  pastOrigBuffer[bufferSize-1] = found?origX:-1;
+
+  float dOrigX = 0;
+  int amVal = 0;
+
+  for (int i = 0; i < bufferSize; i++){
+    if (pastOrigBuffer[i] != -1) {
+      amVal+=(i+1)/2;
+      dOrigX += pastOrigBuffer[i]*(i+1)/2;
+    }
+  }
+  dOrigX /= amVal;
+
+  bool toCenter = false;
+
+  if (controlButton('l', false)) {
+    if (found) {
+    amFound = 5;
       if (dOrigX > 316/2 && dOrigX - 316/2 > minDistPix) {
-        rotate.spin(forward, fmax(powf((dOrigX - 316/2)/15.5, 2), minRotSpeed), rpm);
+        speedRot += fmax(powf((dOrigX - 316/2)/15.5, 2) + 10, minRotSpeed);
       }else if (316/2 - dOrigX > minDistPix) {
-        rotate.spin(reverse, fmax(powf((316/2 - dOrigX)/15.5, 2), minRotSpeed), rpm);
+        speedRot -= fmax(powf((316/2 - dOrigX)/15.5, 2) + 10, minRotSpeed);
       }else {
-        rotate.stop();
       }
+    }else if (amFound >= 0){
+      amFound--;
     }else {
-      rotate.stop();
+      toCenter = true;
     }
-  }else if (amFound >= 0){
-    amFound--;
   }else {
-    if (rotate.position(deg) > 0){
-      rotate.spin(reverse, 30, rpm);
-    }else if (rotate.position(deg) < 0) {
-      rotate.spin(forward, 30, rpm);
+    toCenter = true;
+  }
+
+  if (toCenter) {
+    if (rotate.position(deg) > minDegReset*5){
+      speedRot -= fmax(rotate.position(deg)/2, minRotSpeed);
+    }else if (rotate.position(deg) < -minDegReset*5) {
+      speedRot += fmax(-rotate.position(deg)/2, minRotSpeed);;
     }else {
-      rotate.stop();
+      speedRot = 0;
     }
+  }
+
+  for (int i = 0; i < bufferSize; i++){
+    pastOrigBuffer[i] = -1;
+  }
+
+  speedRot = fmax(fmin(speedRot, 200),-200);
+
+  if(speedRot > 0 && rotate.position(deg) < maxRotDeg*5) {
+    rotate.spin(forward, speedRot, rpm);
+  }else if (speedRot < 0 && rotate.position(deg) > minRotDeg*5) {
+    rotate.spin(forward, speedRot, rpm);
+  }else {
+    rotate.stop();
   }
 
   // ---- SLOWMODE ----
